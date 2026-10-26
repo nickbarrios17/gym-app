@@ -1,5 +1,5 @@
 /* Service worker: guarda la app en caché para que la versión web abra sin internet. */
-const CACHE = 'gym-app-v1';
+const CACHE = 'gym-app-v2';
 const SHELL = ['./', 'index.html', 'app.js', 'app.css', 'nocturne.css', 'merge.js', 'mannequin.js', 'config.js', 'icon.svg', 'manifest.webmanifest',
   'vendor/react.production.min.js', 'vendor/react-dom.production.min.js', 'vendor/htm.umd.js', 'vendor/three.min.js',
   'vendor/phosphor/regular/style.css', 'vendor/phosphor/fill/style.css', 'vendor/phosphor/bold/style.css'];

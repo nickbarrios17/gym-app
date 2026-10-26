@@ -21,7 +21,7 @@ input, textarea { font-family: inherit; }
 .gesture { height: 20px; flex: none; display: grid; place-items: center; }
 
 /* En el teléfono: pantalla completa, sin marco */
-@media (max-width: 520px) {
+@media (max-width: 819px) {
   .stage { padding: 0; background: var(--color-bg); align-items: stretch; }
   .phone {
     width: 100%; height: 100vh; height: 100dvh; border: 0; border-radius: 0; box-shadow: none;
@@ -30,3 +30,73 @@ input, textarea { font-family: inherit; }
   .statusbar, .gesture { display: none; }
   .input, textarea.input { font-size: 16px; }
 }
+
+/* ══════════ Escritorio (≥ 820 px) ══════════ */
+.desk {
+  height: 100vh; height: 100dvh; display: flex; overflow: hidden;
+  font-family: var(--font-body); color: var(--color-text); background: var(--color-bg);
+}
+.side {
+  width: 240px; flex: none; display: flex; flex-direction: column; gap: 4px; padding: 20px 14px;
+  background: var(--color-surface); border-right: 1px solid color-mix(in srgb, var(--color-text) 6%, transparent);
+}
+.brand { display: flex; align-items: center; gap: 10px; font-size: 17px; font-weight: 600; padding: 4px 10px 22px; letter-spacing: -.01em; }
+.brand-logo { width: 32px; height: 32px; border-radius: 9px; display: grid; place-items: center; background: var(--color-accent-800); color: var(--color-accent-200); font-size: 18px; }
+.side nav { display: flex; flex-direction: column; gap: 2px; }
+.side-item {
+  display: flex; align-items: center; gap: 12px; width: 100%; min-height: 42px; padding: 8px 12px;
+  border: 0; border-radius: var(--radius-md); background: transparent; color: var(--color-neutral-300);
+  font-size: 14px; cursor: pointer; text-align: left;
+}
+.side-item i { font-size: 20px; flex: none; }
+.side-item:hover { background: color-mix(in srgb, var(--color-text) 6%, transparent); }
+.side-item.on { background: var(--color-accent-800); color: var(--color-accent-100); }
+.side-session {
+  margin-top: 16px; display: flex; align-items: center; gap: 10px; padding: 10px 12px; width: 100%;
+  border-radius: var(--radius-md); border: 1px solid var(--color-accent); background: color-mix(in srgb, var(--color-accent) 10%, transparent);
+  color: var(--color-text); font-size: 13px; cursor: pointer;
+}
+.live-dot { width: 8px; height: 8px; flex: none; border-radius: 50%; background: var(--color-accent); box-shadow: 0 0 10px var(--color-accent); }
+.main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.main-inner { flex: 1; min-height: 0; position: relative; display: flex; flex-direction: column; }
+
+/* Páginas: contenido centrado con márgenes amplios */
+.desk .page { padding: 32px max(40px, calc((100% - 1120px) / 2)) 48px !important; }
+.desk .page.slim { padding-inline: max(40px, calc((100% - 760px) / 2)) !important; }
+.desk .narrow { width: 100%; max-width: 860px; margin-inline: auto; }
+.desk .narrow .page { padding: 16px 32px 40px !important; }
+.desk .narrow > .backbar, .desk .narrow > div:first-child { padding-top: 20px !important; }
+.desk h3 { font-size: 28px; }
+.desk .span-all { grid-column: 1 / -1; }
+
+/* Inicio: dos columnas */
+.desk .home { display: grid !important; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); align-content: start; column-gap: 32px; row-gap: 28px !important; }
+.desk .home .h-head { grid-column: 1 / -1; }
+.desk .home .h-next { grid-column: 1; grid-row: 2; align-self: start; }
+.desk .home .h-week { grid-column: 1; grid-row: 3; }
+.desk .home .h-recent { grid-column: 2; grid-row: 2 / span 2; }
+
+/* Rutinas: tarjetas en cuadrícula */
+.desk .cards { display: grid !important; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); align-content: start; gap: 18px !important; }
+
+/* Listas de ejercicios en dos columnas */
+.desk .list2 { display: grid !important; grid-template-columns: 1fr 1fr; column-gap: 28px; }
+
+/* Detalle de ejercicio: modelo 3D grande a la izquierda, explicación a la derecha */
+.desk .detail { display: grid !important; grid-template-columns: minmax(0, 1.3fr) minmax(340px, 1fr); align-content: start; column-gap: 28px; padding: 12px 28px 32px; }
+.desk .detail > .backbar { grid-column: 1 / -1; padding: 12px 0 !important; }
+.desk .detail > .d-viewer { grid-column: 1; grid-row: 2 / span 4; position: sticky !important; top: 0; align-self: start; height: calc(100dvh - 110px) !important; margin: 0 !important; }
+.desk .detail > .d-viewer.d-img { height: auto !important; max-height: calc(100dvh - 110px); }
+.desk .detail > .d-side { grid-column: 2; padding-inline: 4px !important; }
+
+/* Progreso: gráfico semanal arriba, el resto en dos columnas */
+.desk .prog { display: grid !important; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-content: start; column-gap: 32px; row-gap: 28px !important; }
+
+/* Ventanas emergentes centradas en lugar de hojas inferiores */
+.desk .sheet { position: fixed !important; justify-content: center !important; align-items: center; padding: 24px; }
+.desk .sheet-card { width: min(540px, 100%); border-radius: var(--radius-lg) !important; max-height: 85vh !important; padding: 16px 24px 24px !important; overflow-y: auto; }
+.desk .sheet-card > span:first-child { display: none; }
+.desk .toast { left: auto !important; right: 32px !important; bottom: 32px !important; width: 360px; }
+
+.desk button:not(:disabled) { transition: background-color .12s, border-color .12s; }
+.desk .page button[style*="border-bottom"]:hover, .desk .list2 > button:hover { background: color-mix(in srgb, var(--color-text) 4%, transparent) !important; }

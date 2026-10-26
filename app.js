@@ -107,7 +107,16 @@ const syncCfg = () => {
 const saveSyncCode = code => { try { localStorage.setItem(SYNC_KEY, JSON.stringify({ ...JSON.parse(localStorage.getItem(SYNC_KEY) || '{}'), code })); } catch (e) {} };
 const agoTxt = t => { const s = Math.round((Date.now() - t) / 1000); return s < 60 ? 'hace un momento' : s < 3600 ? 'hace ' + Math.round(s / 60) + ' min' : 'hace ' + Math.round(s / 3600) + ' h'; };
 
+// true en pantallas anchas (PC): se usa el diseño de escritorio
+const WIDE_Q = '(min-width: 820px)';
+function useWide() {
+  const [w, setW] = useState(() => window.matchMedia(WIDE_Q).matches);
+  useEffect(() => { const m = window.matchMedia(WIDE_Q), f = () => setW(m.matches); m.addEventListener('change', f); return () => m.removeEventListener('change', f); }, []);
+  return w;
+}
+
 function App() {
+  const wide = useWide();
   const [data, setData] = useState(load);
   const [ui, setUi] = useState(() => ({
     screen: data.summary ? 'summary' : 'home', detailId:'sentadilla', detailFrom:'library', detailTab:'tec', openCue:-1, layer:'normal', showAngles:false, showPath:false, fault:-1, seek:'', viewerFull:false,
@@ -247,13 +256,13 @@ function App() {
     ${['kg','lb'].map(u => { const c = seg(u === units); return html`<button key=${u} onClick=${() => { upd({ units: u }); updSes(x => ({ ...x, ex: x.ex.map(e => ({ ...e, sets: e.sets.map(y => ({ ...y, wStr:null })) })) })); }} style=${sx(`border:0;background:${c.bg};color:${c.fg};font-size:12px;padding:6px 10px;cursor:pointer`)}>${u}</button>`; })}
   </div>`;
   const Stat = (label, value) => html`<div style=${sx('padding:12px;border-radius:var(--radius-md);background:var(--color-surface);display:flex;flex-direction:column;gap:2px;min-width:0')}><span style=${sx('font-size:11px;color:var(--color-neutral-400)')}>${label}</span><span style=${sx('font-size:20px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis')}>${value}</span></div>`;
-  const Sheet = (title, right, body) => html`<div style=${sx('position:absolute;inset:0;background:color-mix(in srgb, var(--color-neutral-900) 70%, transparent);display:flex;flex-direction:column;justify-content:flex-end;z-index:30')}>
-    <div style=${sx('background:var(--color-surface);border-radius:var(--radius-lg) var(--radius-lg) 0 0;box-shadow:var(--shadow-lg);padding:10px 20px 20px;display:flex;flex-direction:column;gap:12px;max-height:90%')}>
+  const Sheet = (title, right, body) => html`<div class="sheet" style=${sx('position:absolute;inset:0;background:color-mix(in srgb, var(--color-neutral-900) 70%, transparent);display:flex;flex-direction:column;justify-content:flex-end;z-index:30')}>
+    <div class="sheet-card" style=${sx('background:var(--color-surface);border-radius:var(--radius-lg) var(--radius-lg) 0 0;box-shadow:var(--shadow-lg);padding:10px 20px 20px;display:flex;flex-direction:column;gap:12px;max-height:90%')}>
       <span style=${sx('align-self:center;width:36px;height:4px;border-radius:2px;background:var(--color-neutral-700)')}></span>
       <div style=${sx('display:flex;justify-content:space-between;align-items:center')}><span style=${sx('font-size:17px;font-weight:500')}>${title}</span>${right}</div>
       ${body}
     </div></div>`;
-  const BackBar = (onBack, middle, right, icon='ph-arrow-left') => html`<div style=${sx('display:flex;align-items:center;gap:8px;padding:8px 12px')}>
+  const BackBar = (onBack, middle, right, icon='ph-arrow-left') => html`<div class="backbar" style=${sx('display:flex;align-items:center;gap:8px;padding:8px 12px')}>
     <button class="btn btn-icon btn-secondary" onClick=${onBack} style=${sx('border:0')}><i class=${'ph ' + icon} style=${sx('font-size:20px')}></i></button>
     <span style=${sx('flex:1;min-width:0;font-size:13px;color:var(--color-neutral-400)')}>${middle}</span>${right}</div>`;
   const scrollCol = (pad, gap) => sx(`flex:1;min-height:0;overflow-y:auto;padding:${pad};display:flex;flex-direction:column;gap:${gap}`);
@@ -272,20 +281,20 @@ function App() {
     const planned = new Set(routines.flatMap(r => r.days));
     const wVol = weekH.reduce((n, h) => n + h.vol, 0), wKcal = weekH.reduce((n, h) => n + h.kcal, 0);
     const estMin = next ? Math.round(next.items.reduce((n, it) => n + it.sets, 0) * 2.8 + 5) : 0;
-    return html`<div class="scroll" style=${scrollCol('12px 20px 24px', '22px')}>
-      <div style=${sx('display:flex;align-items:flex-start;justify-content:space-between;gap:12px')}>
+    return html`<div class="scroll page home" style=${scrollCol('12px 20px 24px', '22px')}>
+      <div class="h-head" style=${sx('display:flex;align-items:flex-start;justify-content:space-between;gap:12px')}>
         <div><div style=${sx('font-size:12px;color:var(--color-neutral-500)')}>${fmtLong(now)}</div><h3 style=${sx('margin:4px 0 0')}>Hola${data.profile.name ? ', ' + data.profile.name : ''}</h3></div>
         <div style=${sx('display:flex;gap:6px;align-items:center')}>${UnitSeg()}
           <button class="btn btn-icon btn-secondary" onClick=${openProfile} aria-label="Perfil y sincronización" style=${sx(`width:32px;height:32px;position:relative;color:${sync.status === 'error' ? '#e5826f' : 'inherit'}`)}><i class=${sync.status === 'off' ? 'ph ph-user-circle' : sync.status === 'error' ? 'ph ph-cloud-warning' : sync.status === 'syncing' ? 'ph ph-cloud-arrow-up' : 'ph ph-cloud-check'} style=${sx('font-size:18px')}></i></button>
         </div>
       </div>
 
-      ${s ? html`<button onClick=${go('session')} style=${sx('display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:var(--radius-lg);border:1px solid var(--color-accent);background:color-mix(in srgb, var(--color-accent) 10%, transparent);color:var(--color-text);cursor:pointer;text-align:left')}>
+      ${s ? html`<button class="h-next" onClick=${go('session')} style=${sx('display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:var(--radius-lg);border:1px solid var(--color-accent);background:color-mix(in srgb, var(--color-accent) 10%, transparent);color:var(--color-text);cursor:pointer;text-align:left')}>
           <span style=${sx('width:8px;height:8px;border-radius:50%;background:var(--color-accent);box-shadow:0 0 10px var(--color-accent)')}></span>
           <span style=${sx('flex:1;display:flex;flex-direction:column')}><span style=${sx('font-size:15px;font-weight:500')}>${s.name} en curso</span><span style=${sx('font-size:12px;color:var(--color-neutral-400)')}>${clock(ses.elapsed)} · ${ses.kcal} kcal</span></span>
           <span style=${sx('font-size:13px;color:var(--color-accent)')}>Continuar</span><i class="ph ph-caret-right" style=${sx('color:var(--color-accent)')}></i>
         </button>`
-      : next ? html`<div style=${sx('padding:18px;border-radius:var(--radius-lg);background:linear-gradient(160deg, var(--color-accent-900), var(--color-surface) 70%);box-shadow:var(--shadow-sm);display:flex;flex-direction:column;gap:14px')}>
+      : next ? html`<div class="h-next" style=${sx('padding:18px;border-radius:var(--radius-lg);background:linear-gradient(160deg, var(--color-accent-900), var(--color-surface) 70%);box-shadow:var(--shadow-sm);display:flex;flex-direction:column;gap:14px')}>
           <div style=${sx('font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--color-accent-300)')}>${isToday ? 'Hoy toca' : 'Próxima rutina'}</div>
           <div style=${sx('display:flex;justify-content:space-between;align-items:baseline;gap:8px')}><span style=${sx('font-size:24px;font-weight:500;letter-spacing:-.02em')}>${next.name}</span><span style=${sx('font-size:12px;color:var(--color-neutral-400);white-space:nowrap')}>${next.items.length} ejercicios · ~${estMin} min</span></div>
           <div style=${sx('display:flex;flex-direction:column;gap:8px')}>
@@ -293,13 +302,13 @@ function App() {
           </div>
           <button class="btn btn-primary" onClick=${() => startSession(next)} style=${sx('height:46px;font-size:15px;margin-top:2px')}><i class="ph ph-play"></i>Empezar sesión</button>
         </div>`
-      : html`<div style=${sx('padding:18px;border-radius:var(--radius-lg);background:var(--color-surface);display:flex;flex-direction:column;gap:12px')}>
+      : html`<div class="h-next" style=${sx('padding:18px;border-radius:var(--radius-lg);background:var(--color-surface);display:flex;flex-direction:column;gap:12px')}>
           <span style=${sx('font-size:17px;font-weight:500')}>Crea tu primera rutina</span>
           <span style=${sx('font-size:13px;color:var(--color-neutral-400)')}>Elige ejercicios, series y repeticiones, y los días que entrenas.</span>
           <button class="btn btn-primary" onClick=${newRoutine} style=${sx('height:44px')}><i class="ph ph-plus"></i>Nueva rutina</button>
         </div>`}
 
-      <div style=${sx('display:flex;flex-direction:column;gap:10px')}>
+      <div class="h-week" style=${sx('display:flex;flex-direction:column;gap:10px')}>
         <div style=${sx('display:flex;justify-content:space-between;align-items:baseline')}><span style=${sx('font-size:16px;font-weight:500')}>Esta semana</span><span style=${sx('font-size:12px;color:var(--color-neutral-500)')}>${fmtDM(ws)} – ${fmtDM(addDays(ws, 6))}</span></div>
         <div style=${sx('display:grid;grid-template-columns:repeat(7,1fr);gap:6px')}>
           ${DAYS.map((l, i) => { const done = doneDays.has(i), isT = i === today, plan = planned.has(i);
@@ -315,7 +324,7 @@ function App() {
         </div>
       </div>
 
-      <div style=${sx('display:flex;flex-direction:column;gap:10px')}>
+      <div class="h-recent" style=${sx('display:flex;flex-direction:column;gap:10px')}>
         <span style=${sx('font-size:16px;font-weight:500')}>Sesiones recientes</span>
         ${!hist.length && html`<div style=${sx('font-size:13px;color:var(--color-neutral-500)')}>Aún no hay sesiones. Cuando termines una, aparecerá aquí con tus pesos, calorías y notas.</div>`}
         ${hist.slice(0, 6).map(h => html`<button key=${h.id} onClick=${() => setU({ screen:'hist', histId:h.id, histFrom:'home' })} style=${sx('padding:14px;border-radius:var(--radius-md);background:var(--color-surface);display:flex;flex-direction:column;gap:8px;border:0;color:var(--color-text);text-align:left;cursor:pointer')}>
@@ -332,9 +341,9 @@ function App() {
     const h = hist.find(x => x.id === S.histId);
     if (!h) return null;
     const del = () => { if (!confirm('¿Borrar esta sesión del historial?')) return; upd(d => ({ history: d.history.filter(x => x.id !== h.id) })); setU({ screen: S.histFrom }); };
-    return html`<div style=${sx('flex:1;min-height:0;display:flex;flex-direction:column')}>
+    return html`<div class="narrow" style=${sx('flex:1;min-height:0;display:flex;flex-direction:column')}>
       ${BackBar(go(S.histFrom), fmtLong(h.date), html`<button class="btn btn-icon btn-secondary" onClick=${del} aria-label="Borrar" style=${sx('border:0;color:var(--color-neutral-400)')}><i class="ph ph-trash"></i></button>`)}
-      <div class="scroll" style=${scrollCol('8px 20px 24px', '18px')}>
+      <div class="scroll page" style=${scrollCol('8px 20px 24px', '18px')}>
         <h3 style=${sx('margin:0')}>${h.name}</h3>
         <div style=${sx('display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px')}>${Stat('Duración', durTxt(h.elapsed))}${Stat('Calorías', h.kcal + ' kcal')}${Stat('Volumen', fvol(h.vol))}</div>
         ${h.ex.map((e, i) => html`<div key=${i} style=${sx('padding:12px 14px;border-radius:var(--radius-md);background:var(--color-surface);display:flex;flex-direction:column;gap:6px')}>
@@ -351,9 +360,9 @@ function App() {
 
   // ════════ RUTINAS ════════
   const newRoutine = () => setU({ editing: { id:null, name:'', days:[], items:[] }, editErr:false, screen:'editor' });
-  const renderRoutines = () => html`<div class="scroll" style=${scrollCol('12px 20px 24px', '16px')}>
-    <div style=${sx('display:flex;justify-content:space-between;align-items:center')}><h3 style=${sx('margin:0')}>Rutinas</h3><button class="btn btn-primary" onClick=${newRoutine}><i class="ph ph-plus"></i>Nueva</button></div>
-    ${!data.routines.length && html`<div style=${sx('font-size:13px;color:var(--color-neutral-500)')}>No tienes rutinas. Crea una con el botón «Nueva».</div>`}
+  const renderRoutines = () => html`<div class="scroll page cards" style=${scrollCol('12px 20px 24px', '16px')}>
+    <div class="span-all" style=${sx('display:flex;justify-content:space-between;align-items:center')}><h3 style=${sx('margin:0')}>Rutinas</h3><button class="btn btn-primary" onClick=${newRoutine}><i class="ph ph-plus"></i>Nueva</button></div>
+    ${!data.routines.length && html`<div class="span-all" style=${sx('font-size:13px;color:var(--color-neutral-500)')}>No tienes rutinas. Crea una con el botón «Nueva».</div>`}
     ${data.routines.map(r => html`<div key=${r.id} style=${sx('padding:16px;border-radius:var(--radius-lg);background:var(--color-surface);display:flex;flex-direction:column;gap:12px')}>
       <div style=${sx('display:flex;justify-content:space-between;align-items:baseline')}><span style=${sx('font-size:18px;font-weight:500')}>${r.name}</span><span style=${sx('font-size:12px;color:var(--color-neutral-400)')}>${r.days.length ? r.days.slice().sort().map(d => DAYS[d]).join(' · ') : 'Sin días'}</span></div>
       <div style=${sx('display:flex;flex-direction:column;gap:6px')}>${r.items.map((it, i) => html`<div key=${i} style=${sx('display:flex;justify-content:space-between;gap:8px;font-size:13px')}><span style=${sx('color:var(--color-neutral-300)')}>${info(it.exId).name}</span><span style=${sx('color:var(--color-neutral-500);flex:none')}>${scheme(it)}</span></div>`)}</div>
@@ -379,13 +388,13 @@ function App() {
     const pickIds = pq ? [...ORDER.filter(id => norm(EX[id].name).includes(pq)), ...(catalog || []).filter(e => e.lc.includes(pq)).slice(0, 30).map(e => e.key)]
       : [...ORDER, ...ed.items.map(it => it.exId).filter(id => !EX[id])];
     const counter = (label, onDec, onInc) => html`<div style=${sx('display:flex;align-items:center;justify-content:space-between;border:1px solid var(--color-divider);border-radius:var(--radius-md);padding:2px')}><button class="btn btn-icon btn-ghost" onClick=${onDec} style=${sx('width:34px;height:34px')}><i class="ph ph-minus"></i></button><span style=${sx('font-size:14px')}>${label}</span><button class="btn btn-icon btn-ghost" onClick=${onInc} style=${sx('width:34px;height:34px')}><i class="ph ph-plus"></i></button></div>`;
-    return html`<div style=${sx('flex:1;min-height:0;display:flex;flex-direction:column')}>
+    return html`<div class="narrow" style=${sx('flex:1;min-height:0;display:flex;flex-direction:column')}>
       <div style=${sx('display:flex;align-items:center;gap:8px;padding:8px 12px')}>
         <button class="btn btn-icon btn-secondary" onClick=${() => setU({ editing:null, picker:false, screen:'routines' })} style=${sx('border:0')}><i class="ph ph-x" style=${sx('font-size:20px')}></i></button>
         <span style=${sx('flex:1;font-size:17px;font-weight:500')}>${ed.id ? 'Editar rutina' : 'Nueva rutina'}</span>
         <button class="btn btn-primary" onClick=${save}>Guardar</button>
       </div>
-      <div class="scroll" style=${scrollCol('8px 20px 24px', '20px')}>
+      <div class="scroll page" style=${scrollCol('8px 20px 24px', '20px')}>
         <div class="field"><label>Nombre</label><input class="input" value=${ed.name} onChange=${e => { const v = e.target.value; updEd(x => ({ ...x, name: v })); }} placeholder="Ej. Torso / Pierna" /></div>
         <div class="field"><label>Días</label>
           <div style=${sx('display:grid;grid-template-columns:repeat(7,1fr);gap:6px')}>
@@ -433,29 +442,29 @@ function App() {
     const catAll = catalog ? catalog.filter(e => (!bpKey || e.bodyPart === bpKey) && (!eqKey || e.equipment === eqKey) && (!q || e.lc.includes(q))) : [];
     const chipRow = (list, cur, key, h, r) => html`<div class="scroll" style=${sx('display:flex;gap:6px;overflow-x:auto;margin:0 -20px;padding:0 20px')}>
       ${list.map(([label]) => { const c = chip(cur === label); return html`<button key=${label} onClick=${() => setU({ [key]: label, libLimit: 40 })} style=${sx(`flex:none;height:${h}px;padding:0 12px;border-radius:${r};border:1px solid ${c.border};background:${c.bg};color:${c.fg};font-size:13px;cursor:pointer`)}>${label}</button>`; })}</div>`;
-    return html`<div class="scroll" style=${scrollCol('12px 20px 24px', '14px')}>
+    return html`<div class="scroll page" style=${scrollCol('12px 20px 24px', '14px')}>
       <div style=${sx('display:flex;justify-content:space-between;align-items:baseline;gap:8px')}><h3 style=${sx('margin:0')}>Ejercicios</h3><span style=${sx('font-size:12px;color:var(--color-neutral-500)')}>${catalog ? nf(catAll.length, 0) + ' en catálogo · 5 en 3D' : '5 en 3D'}</span></div>
       <div style=${sx('position:relative')}><i class="ph ph-magnifying-glass" style=${sx('position:absolute;left:12px;top:12px;color:var(--color-neutral-500)')}></i><input class="input" value=${S.search} onChange=${e => setU({ search: e.target.value, libLimit: 40 })} placeholder="Buscar en el catálogo" style=${sx('padding-left:34px;min-height:40px')} /></div>
       <div style=${sx('display:flex;flex-direction:column;gap:8px')}>${chipRow(BP, S.bp, 'bp', 32, '16px')}${chipRow(EQ, S.eq, 'eq', 28, 'var(--radius-md)')}</div>
-      ${ownIds.length > 0 && html`<div style=${sx('display:flex;flex-direction:column')}>
-        <span style=${sx('font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--color-neutral-500);padding-bottom:2px')}>Con modelo 3D interactivo</span>
+      ${ownIds.length > 0 && html`<div class="list2" style=${sx('display:flex;flex-direction:column')}>
+        <span class="span-all" style=${sx('font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--color-neutral-500);padding-bottom:2px')}>Con modelo 3D interactivo</span>
         ${ownIds.map(id => html`<button key=${id} onClick=${() => openDetail(id, 'library')} style=${sx('display:flex;align-items:center;gap:12px;padding:12px 0;border:0;background:transparent;color:var(--color-text);cursor:pointer;text-align:left;border-bottom:1px solid color-mix(in srgb, var(--color-text) 6%, transparent)')}>
           <span style=${sx('width:48px;height:48px;flex:none;border-radius:var(--radius-md);background:radial-gradient(circle at 50% 70%, var(--color-accent-800), var(--color-surface));display:grid;place-items:center;color:var(--color-accent-300)')}><i class="ph ph-cube" style=${sx('font-size:22px')}></i></span>
           <span style=${sx('flex:1;min-width:0;display:flex;flex-direction:column;gap:2px')}><span style=${sx('font-size:15px;font-weight:500')}>${EX[id].name}</span><span style=${sx('font-size:12px;color:var(--color-neutral-500)')}>${EX[id].muscles.join(' · ')}</span></span>
           <span class="tag tag-accent">3D</span><i class="ph ph-caret-right" style=${sx('color:var(--color-neutral-600)')}></i>
         </button>`)}
       </div>`}
-      <div style=${sx('display:flex;flex-direction:column')}>
-        <span style=${sx('font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--color-neutral-500);padding-bottom:2px')}>Catálogo animado</span>
-        ${!catalog && !catErr && html`<div style=${sx('padding:20px 0;font-size:13px;color:var(--color-neutral-400);display:flex;gap:8px;align-items:center')}><i class="ph ph-circle-notch"></i>Cargando 1.300+ ejercicios…</div>`}
-        ${catErr && html`<div style=${sx('padding:16px 0;display:flex;flex-direction:column;gap:10px;align-items:flex-start')}><span style=${sx('font-size:13px;color:var(--color-neutral-400)')}>No se pudo cargar el catálogo. Revisa tu conexión.</span><button class="btn btn-secondary" onClick=${loadCatalog}><i class="ph ph-arrow-clockwise"></i>Reintentar</button></div>`}
+      <div class="list2" style=${sx('display:flex;flex-direction:column')}>
+        <span class="span-all" style=${sx('font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--color-neutral-500);padding-bottom:2px')}>Catálogo animado</span>
+        ${!catalog && !catErr && html`<div class="span-all" style=${sx('padding:20px 0;font-size:13px;color:var(--color-neutral-400);display:flex;gap:8px;align-items:center')}><i class="ph ph-circle-notch"></i>Cargando 1.300+ ejercicios…</div>`}
+        ${catErr && html`<div class="span-all" style=${sx('padding:16px 0;display:flex;flex-direction:column;gap:10px;align-items:flex-start')}><span style=${sx('font-size:13px;color:var(--color-neutral-400)')}>No se pudo cargar el catálogo. Revisa tu conexión.</span><button class="btn btn-secondary" onClick=${loadCatalog}><i class="ph ph-arrow-clockwise"></i>Reintentar</button></div>`}
         ${catAll.slice(0, S.libLimit).map(e => html`<button key=${e.key} onClick=${() => openDetail(e.key, 'library')} style=${sx('display:flex;align-items:center;gap:12px;padding:10px 0;border:0;background:transparent;color:var(--color-text);cursor:pointer;text-align:left;border-bottom:1px solid color-mix(in srgb, var(--color-text) 6%, transparent)')}>
           <span style=${sx('width:52px;height:52px;flex:none;border-radius:var(--radius-md);background:var(--color-neutral-100);overflow:hidden;display:grid;place-items:center')}><img src=${e.gifUrl} alt="" loading="lazy" style=${sx('width:100%;height:100%;object-fit:cover')} /></span>
           <span style=${sx('flex:1;min-width:0;display:flex;flex-direction:column;gap:2px')}><span style=${sx('font-size:14px;font-weight:500')}>${e.name}</span><span style=${sx('font-size:12px;color:var(--color-neutral-500)')}>${(MU[e.muscle] || e.muscle) + ' · ' + (EQN[e.equipment] || e.equipment)}</span></span>
           <i class="ph ph-caret-right" style=${sx('color:var(--color-neutral-600)')}></i>
         </button>`)}
-        ${catAll.length > S.libLimit && html`<button class="btn btn-secondary" onClick=${() => setU({ libLimit: S.libLimit + 40 })} style=${sx('margin-top:12px;height:42px')}>Cargar más · ${nf(catAll.length - S.libLimit, 0)} restantes</button>`}
-        ${catalog && !ownIds.length && !catAll.length && html`<div style=${sx('padding:24px 0;font-size:13px;color:var(--color-neutral-500)')}>Sin resultados con estos filtros.</div>`}
+        ${catAll.length > S.libLimit && html`<button class="btn btn-secondary span-all" onClick=${() => setU({ libLimit: S.libLimit + 40 })} style=${sx('margin-top:12px;height:42px')}>Cargar más · ${nf(catAll.length - S.libLimit, 0)} restantes</button>`}
+        ${catalog && !ownIds.length && !catAll.length && html`<div class="span-all" style=${sx('padding:24px 0;font-size:13px;color:var(--color-neutral-500)')}>Sin resultados con estos filtros.</div>`}
       </div>
     </div>`;
   };
@@ -469,9 +478,9 @@ function App() {
     const best = maxEver(id);
     const full = S.viewerFull;
     const tabs = [['tec','Técnica'],['err','Errores comunes'],['breath','Respiración']];
-    return html`<div ref=${detailRef} class="scroll" style=${sx('flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column')}>
+    return html`<div ref=${detailRef} class="scroll detail" style=${sx('flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column')}>
       ${BackBar(() => setU({ viewerFull:false, screen: backTo(S.detailFrom) }), D.group, html`<span class="tag tag-accent">${D.level}</span>`)}
-      <div style=${sx(full ? 'position:absolute;inset:0;z-index:20;height:auto;flex:none;margin:0;padding:8px 12px 12px;background:var(--color-bg);display:flex;flex-direction:column;gap:8px' : 'position:relative;height:420px;flex:none;margin:0 12px;display:flex;flex-direction:column;gap:8px')}>
+      <div class=${full ? '' : 'd-viewer'} style=${sx(full ? 'position:absolute;inset:0;z-index:20;height:auto;flex:none;margin:0;padding:8px 12px 12px;background:var(--color-bg);display:flex;flex-direction:column;gap:8px' : 'position:relative;height:420px;flex:none;margin:0 12px;display:flex;flex-direction:column;gap:8px')}>
         <div style=${sx('position:relative;flex:1;min-height:0;border-radius:var(--radius-lg);background:radial-gradient(ellipse at 50% 80%, var(--color-accent-900), var(--color-bg) 72%);box-shadow:var(--shadow-sm);overflow:hidden')}>
           <gym-mannequin exercise=${D.anim} layer=${S.layer} angles=${S.showAngles ? 'true' : 'false'} path=${S.showPath ? 'true' : 'false'} fault=${String(S.fault)} seek=${S.seek} style=${sx('position:absolute;inset:0;width:100%;height:100%')}></gym-mannequin>
           ${S.fault >= 0 && html`<div style=${sx('position:absolute;left:10px;right:10px;bottom:84px;display:flex;align-items:center;gap:10px;padding:8px 6px 8px 12px;border-radius:var(--radius-md);background:color-mix(in srgb, var(--color-bg) 88%, transparent);border:1px solid #e5826f')}>
@@ -488,7 +497,7 @@ function App() {
         </div>
       </div>
 
-      <div style=${sx('padding:18px 20px 8px;display:flex;flex-direction:column;gap:10px')}>
+      <div class="d-side" style=${sx('padding:18px 20px 8px;display:flex;flex-direction:column;gap:10px')}>
         <h3 style=${sx('margin:0')}>${D.name}</h3>
         <div style=${sx('display:flex;flex-wrap:wrap;gap:6px;align-items:center')}>
           ${D.muscles.map(m => html`<span key=${m} class="tag tag-accent" style=${sx('display:flex;gap:5px;align-items:center')}><span style=${sx('width:6px;height:6px;border-radius:50%;background:var(--color-accent-300)')}></span>${m}</span>`)}
@@ -497,11 +506,11 @@ function App() {
         <div style=${sx('display:flex;gap:6px;align-items:center;font-size:12px;color:var(--color-neutral-400)')}><i class="ph ph-metronome"></i>Tempo ${D.tempo}</div>
       </div>
 
-      <div style=${sx('display:flex;gap:20px;padding:6px 20px 0;border-bottom:1px solid color-mix(in srgb, var(--color-text) 8%, transparent)')}>
+      <div class="d-side" style=${sx('display:flex;gap:20px;padding:6px 20px 0;border-bottom:1px solid color-mix(in srgb, var(--color-text) 8%, transparent)')}>
         ${tabs.map(([t, label]) => html`<button key=${t} onClick=${() => setU({ detailTab: t })} style=${sx(`padding:10px 0;border:0;background:transparent;color:${S.detailTab === t ? 'var(--color-text)' : 'var(--color-neutral-500)'};font-size:14px;cursor:pointer;box-shadow:inset 0 -2px 0 ${S.detailTab === t ? 'var(--color-accent)' : 'transparent'}`)}>${label}</button>`)}
       </div>
 
-      <div style=${sx('padding:14px 20px 8px;display:flex;flex-direction:column;gap:8px')}>
+      <div class="d-side" style=${sx('padding:14px 20px 8px;display:flex;flex-direction:column;gap:8px')}>
         ${S.detailTab === 'tec' && D.cues.map(([t, d], i) => { const open = S.openCue === i;
           return html`<button key=${i} onClick=${() => setU(open ? { openCue: -1 } : { openCue: i, seek: CUET[id][i] + '#' + Date.now() })} style=${sx(`display:flex;gap:12px;padding:12px;border-radius:var(--radius-md);border:1px solid ${open ? 'var(--color-accent-700)' : 'transparent'};background:${open ? 'color-mix(in srgb, var(--color-accent) 8%, var(--color-surface))' : 'var(--color-surface)'};color:var(--color-text);text-align:left;cursor:pointer`)}>
             <span style=${sx('width:24px;height:24px;flex:none;border-radius:50%;display:grid;place-items:center;font-size:12px;border:1px solid var(--color-accent);color:var(--color-accent)')}>${i + 1}</span>
@@ -517,7 +526,7 @@ function App() {
         ${S.detailTab === 'breath' && D.breath.map((b, i) => html`<div key=${i} style=${sx('display:flex;gap:12px;align-items:center;padding:12px;border-radius:var(--radius-md);background:var(--color-surface)')}><i class="ph ph-wind" style=${sx('font-size:18px;color:var(--color-accent-300)')}></i><span style=${sx('font-size:14px')}>${b}</span></div>`)}
       </div>
 
-      <div style=${sx('padding:16px 20px 24px;display:flex;flex-direction:column;gap:12px')}>
+      <div class="d-side" style=${sx('padding:16px 20px 24px;display:flex;flex-direction:column;gap:12px')}>
         <span style=${sx('font-size:16px;font-weight:500')}>Tu historial</span>
         <div style=${sx('display:grid;grid-template-columns:1fr 1fr;gap:8px')}>${Stat('Mejor serie', best ? fwu(best.w) + ' × ' + best.reps : '—')}${Stat('1RM estimado', best ? fwu(e1rm(best)) : '—')}</div>
         ${vals.length ? html`
@@ -534,10 +543,10 @@ function App() {
     const Gx = S.gifId ? catMap.current[S.gifId] : null;
     if (!Gx) return html`<div style=${sx('flex:1;display:flex;flex-direction:column')}>${BackBar(() => setU({ screen: backTo(S.gifFrom) }), '', null)}<div style=${sx('padding:20px;font-size:13px;color:var(--color-neutral-400)')}>${catErr ? 'No se pudo cargar el catálogo.' : 'Cargando ejercicio…'}</div></div>`;
     return html`<div style=${sx('flex:1;min-height:0;position:relative;display:flex;flex-direction:column')}>
-      <div class="scroll" style=${sx('flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column')}>
+      <div class="scroll detail" style=${sx('flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column')}>
         ${BackBar(() => setU({ addSheet:false, screen: backTo(S.gifFrom) }), MU[Gx.muscle] || Gx.muscle, html`<span class="tag tag-neutral">${CATN[Gx.category] || Gx.category}</span>`)}
-        <div style=${sx('margin:0 12px;border-radius:var(--radius-lg);background:var(--color-neutral-100);aspect-ratio:1/1;display:grid;place-items:center;overflow:hidden;box-shadow:var(--shadow-sm);flex:none')}><img src=${Gx.gifUrl} alt=${Gx.name} style=${sx('width:100%;height:100%;object-fit:contain')} /></div>
-        <div style=${sx('padding:18px 20px 8px;display:flex;flex-direction:column;gap:10px')}>
+        <div class="d-viewer d-img" style=${sx('margin:0 12px;border-radius:var(--radius-lg);background:var(--color-neutral-100);aspect-ratio:1/1;display:grid;place-items:center;overflow:hidden;box-shadow:var(--shadow-sm);flex:none')}><img src=${Gx.gifUrl} alt=${Gx.name} style=${sx('width:100%;height:100%;object-fit:contain')} /></div>
+        <div class="d-side" style=${sx('padding:18px 20px 8px;display:flex;flex-direction:column;gap:10px')}>
           <h3 style=${sx('margin:0')}>${Gx.name}</h3>
           <div style=${sx('display:flex;flex-wrap:wrap;gap:6px')}>
             <span class="tag tag-accent">${MU[Gx.muscle] || Gx.muscle}</span>
@@ -545,12 +554,12 @@ function App() {
             <span class="tag tag-outline">${EQN[Gx.equipment] || Gx.equipment}</span>
           </div>
         </div>
-        <div style=${sx('padding:8px 20px;display:flex;flex-direction:column;gap:8px')}>
+        <div class="d-side" style=${sx('padding:8px 20px;display:flex;flex-direction:column;gap:8px')}>
           <span style=${sx('font-size:16px;font-weight:500')}>Cómo hacerlo</span>
           ${(Gx.instructions || []).map((t, i) => html`<div key=${i} style=${sx('display:flex;gap:12px;padding:10px 12px;border-radius:var(--radius-md);background:var(--color-surface)')}><span style=${sx('width:22px;height:22px;flex:none;border-radius:50%;display:grid;place-items:center;font-size:11px;border:1px solid var(--color-accent);color:var(--color-accent-300)')}>${i + 1}</span><span style=${sx('font-size:13px;line-height:1.45;color:var(--color-neutral-200)')}>${t}</span></div>`)}
           <span style=${sx('font-size:11px;color:var(--color-neutral-500);display:flex;gap:6px;align-items:center;padding-top:4px')}><i class="ph ph-info"></i>Animación de ExerciseGymGifsDB · sin modelo 3D</span>
         </div>
-        <div style=${sx('padding:12px 20px 24px;display:flex;gap:8px')}>
+        <div class="d-side" style=${sx('padding:12px 20px 24px;display:flex;gap:8px')}>
           ${S.gifFrom === 'session' && s && html`<button class="btn btn-secondary" onClick=${() => setU({ screen:'session' })} style=${sx('flex:1;height:46px')}>Volver a la sesión</button>`}
           <button class="btn btn-primary" onClick=${() => setU({ addSheet:true })} style=${sx('flex:1;height:46px')}><i class="ph ph-plus"></i>Añadir a rutina</button>
         </div>
@@ -579,7 +588,7 @@ function App() {
     const fi = ce.sets.findIndex(x => !x.done);
     const step = units === 'kg' ? 2.5 : 5 / LB;
     const round = (w, r) => html`<button onClick=${w} style=${sx('width:56px;height:56px;border-radius:50%;border:1px solid var(--color-divider);background:transparent;color:var(--color-text);font-size:22px;cursor:pointer;display:grid;place-items:center')}><i class=${'ph ' + r}></i></button>`;
-    return html`<div style=${sx('flex:1;min-height:0;display:flex;flex-direction:column')}>
+    return html`<div class="narrow" style=${sx('flex:1;min-height:0;display:flex;flex-direction:column')}>
       <div style=${sx('display:flex;align-items:center;gap:8px;padding:8px 12px 4px')}>
         <button class="btn btn-icon btn-secondary" onClick=${go('home')} style=${sx('border:0')} aria-label="Minimizar"><i class="ph ph-caret-down" style=${sx('font-size:20px')}></i></button>
         <span style=${sx('flex:1;display:flex;flex-direction:column')}><span style=${sx('font-size:16px;font-weight:500')}>${s.name}</span><span style=${sx('font-size:12px;color:var(--color-neutral-400)')}>${doneSets} de ${totalSets} series</span></span>
@@ -600,7 +609,7 @@ function App() {
         <button class="btn btn-ghost" onClick=${() => updSes(x => ({ ...x, restEnd: 0 }))}>Saltar</button>
       </div>`}
 
-      <div class="scroll" style=${scrollCol('12px 16px 20px', '14px')}>
+      <div class="scroll page" style=${scrollCol('12px 16px 20px', '14px')}>
         <div class="scroll" style=${sx('display:flex;gap:6px;overflow-x:auto;margin:0 -16px;padding:0 16px;flex:none')}>
           ${s.ex.map((e, i) => { const c = chip(i === s.cur); return html`<button key=${i} onClick=${() => updSes(x => ({ ...x, cur: i }))} style=${sx(`flex:none;display:flex;gap:6px;align-items:center;height:34px;padding:0 12px;border-radius:17px;border:1px solid ${c.border};background:${c.bg};color:${c.fg};font-size:13px;cursor:pointer`)}><span>${info(e.exId).short}</span><span style=${sx('font-size:11px;opacity:.75')}>${e.sets.filter(x => x.done).length}/${e.sets.length}</span></button>`; })}
         </div>
@@ -674,7 +683,7 @@ function App() {
       setU({ screen:'home' }); toast('Sesión guardada');
     };
     const discard = () => { if (!confirm('¿Descartar esta sesión sin guardarla?')) return; upd({ summary: null }); setU({ screen:'home' }); };
-    return html`<div class="scroll" style=${scrollCol('24px 20px', '20px')}>
+    return html`<div class="scroll page slim" style=${scrollCol('24px 20px', '20px')}>
       <div style=${sx('display:flex;flex-direction:column;gap:6px')}>
         <span style=${sx('font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--color-accent)')}>Sesión completada</span>
         <h2 style=${sx('margin:0')}>${sm.name}</h2>
@@ -726,10 +735,10 @@ function App() {
     const lDelta = pts.length > 1 ? pts[pts.length - 1].v - pts[0].v : 0;
     const prs = logged.map(id => ({ id, m: maxEver(id) })).filter(x => x.m);
 
-    return html`<div class="scroll" style=${scrollCol('12px 20px 24px', '22px')}>
-      <div style=${sx('display:flex;justify-content:space-between;align-items:center')}><h3 style=${sx('margin:0')}>Progreso</h3>${UnitSeg()}</div>
+    return html`<div class="scroll page prog" style=${scrollCol('12px 20px 24px', '22px')}>
+      <div class="span-all" style=${sx('display:flex;justify-content:space-between;align-items:center')}><h3 style=${sx('margin:0')}>Progreso</h3>${UnitSeg()}</div>
 
-      <div style=${sx('display:flex;flex-direction:column;gap:14px')}>
+      <div class="span-all" style=${sx('display:flex;flex-direction:column;gap:14px')}>
         <div style=${sx('display:flex;border:1px solid var(--color-divider);border-radius:var(--radius-md);overflow:hidden;align-self:flex-start')}>
           ${[['vol','Volumen'],['kcal','Calorías'],['ses','Sesiones']].map(([m, label]) => { const c = seg(metric === m); return html`<button key=${m} onClick=${() => setU({ progMetric: m })} style=${sx(`border:0;background:${c.bg};color:${c.fg};font-size:13px;padding:7px 12px;cursor:pointer`)}>${label}</button>`; })}
         </div>
@@ -772,7 +781,7 @@ function App() {
         </button>`)}
       </div>
 
-      ${hist.length > 0 && html`<div style=${sx('display:flex;flex-direction:column;gap:8px')}>
+      ${hist.length > 0 && html`<div class="span-all" style=${sx('display:flex;flex-direction:column;gap:8px')}>
         <span style=${sx('font-size:16px;font-weight:500')}>Todas las sesiones</span>
         ${hist.map(h => html`<button key=${h.id} onClick=${() => setU({ screen:'hist', histId:h.id, histFrom:'progress' })} style=${sx('display:flex;justify-content:space-between;gap:10px;padding:10px 0;border:0;border-bottom:1px solid color-mix(in srgb, var(--color-text) 6%, transparent);background:transparent;color:var(--color-text);text-align:left;cursor:pointer;font-size:14px')}>
           <span>${h.name}</span><span style=${sx('color:var(--color-neutral-500);font-size:12px')}>${fmtShort(h.date)} · ${h.kcal} kcal</span></button>`)}
@@ -819,19 +828,43 @@ function App() {
     : scr === 'detail' ? renderDetail() : scr === 'gif' ? renderGif() : scr === 'session' ? (renderSession() || renderHome()) : scr === 'summary' ? (renderSummary() || renderHome())
     : scr === 'progress' ? renderProgress() : scr === 'hist' ? (renderHist() || renderHome()) : renderHome();
   const t = new Date(now);
+  const NAV = [['home','Inicio','ph-house'],['routines','Rutinas','ph-list-checks'],['library','Ejercicios','ph-barbell'],['progress','Progreso','ph-chart-line-up']];
+  const overlays = html`${S.profile && renderProfile()}
+    ${S.toast && html`<div class="toast" style=${sx('position:absolute;left:16px;right:16px;bottom:16px;z-index:40;padding:12px 14px;border-radius:var(--radius-md);background:var(--color-surface);border:1px solid var(--color-accent);box-shadow:var(--shadow-md);display:flex;gap:8px;align-items:center;font-size:14px')}><i class="ph ph-check-circle" style=${sx('color:var(--color-accent)')}></i>${S.toast}</div>`}`;
+
+  // —— Escritorio: menú lateral y contenido a todo el ancho ——
+  if (wide) {
+    const syncIcon = sync.status === 'off' ? 'ph ph-cloud-slash' : sync.status === 'error' ? 'ph ph-cloud-warning' : sync.status === 'syncing' ? 'ph ph-cloud-arrow-up' : 'ph ph-cloud-check';
+    const syncTxt = sync.status === 'off' ? 'Sin sincronizar' : sync.status === 'error' ? 'Error al sincronizar' : sync.status === 'syncing' ? 'Sincronizando…' : 'Sincronizado';
+    return html`<div class="desk">
+      <aside class="side">
+        <div class="brand"><span class="brand-logo"><i class="ph-fill ph-barbell"></i></span>Gym App</div>
+        <nav>${NAV.map(([k, label, ic]) => { const on = navActive === k;
+          return html`<button key=${k} class=${'side-item' + (on ? ' on' : '')} onClick=${go(k)}><i class=${(on ? 'ph-fill ' : 'ph ') + ic}></i>${label}</button>`; })}</nav>
+        ${s && html`<button class="side-session" onClick=${go('session')}>
+          <span class="live-dot"></span><span style=${sx('flex:1;min-width:0;display:flex;flex-direction:column;text-align:left')}><span style=${sx('font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap')}>${s.name}</span><span style=${sx('font-size:12px;color:var(--color-neutral-400)')}>${clock(ses.elapsed)}${ses.rest > 0 ? ' · descanso ' + clock(ses.rest) : ''}</span></span>
+        </button>`}
+        <span style=${sx('flex:1')}></span>
+        <button class="side-item" onClick=${openProfile} style=${sx(sync.status === 'error' ? 'color:#e5826f' : '')}><i class="ph ph-user-circle"></i><span style=${sx('flex:1;display:flex;flex-direction:column;text-align:left;line-height:1.25')}><span>${data.profile.name || 'Tu perfil'}</span><span style=${sx('font-size:11px;color:var(--color-neutral-500);display:flex;gap:4px;align-items:center')}><i class=${syncIcon}></i>${syncTxt}</span></span></button>
+      </aside>
+      <main class="main"><div class="main-inner">
+        <${React.Fragment} key=${scr}>${body}<//>
+        ${overlays}
+      </div></main>
+    </div>`;
+  }
 
   return html`<div class="stage"><div class="phone">
     <div class="statusbar"><span>${t.getHours()}:${String(t.getMinutes()).padStart(2, '0')}</span><span style=${sx('position:absolute;left:50%;top:10px;width:12px;height:12px;margin-left:-6px;border-radius:50%;background:var(--color-neutral-900)')}></span><div style=${sx('display:flex;gap:6px;align-items:center;font-size:14px')}><i class="ph-fill ph-cell-signal-full"></i><i class="ph-fill ph-wifi-high"></i><i class="ph-fill ph-battery-high"></i></div></div>
     <div style=${sx('flex:1;min-height:0;position:relative;display:flex;flex-direction:column')}>
       <${React.Fragment} key=${scr}>${body}<//>
-      ${S.profile && renderProfile()}
-      ${S.toast && html`<div style=${sx('position:absolute;left:16px;right:16px;bottom:16px;z-index:40;padding:12px 14px;border-radius:var(--radius-md);background:var(--color-surface);border:1px solid var(--color-accent);box-shadow:var(--shadow-md);display:flex;gap:8px;align-items:center;font-size:14px')}><i class="ph ph-check-circle" style=${sx('color:var(--color-accent)')}></i>${S.toast}</div>`}
+      ${overlays}
     </div>
     ${s && scr !== 'session' && showNav && html`<button onClick=${go('session')} style=${sx('flex:none;margin:0 12px 8px;display:flex;align-items:center;gap:10px;height:44px;padding:0 14px;border-radius:var(--radius-md);border:1px solid var(--color-accent);background:var(--color-surface);color:var(--color-text);cursor:pointer;font-size:13px')}>
       <span style=${sx('width:7px;height:7px;border-radius:50%;background:var(--color-accent);box-shadow:0 0 8px var(--color-accent)')}></span><span style=${sx('flex:1;text-align:left')}>${s.name} · ${clock(ses.elapsed)}${ses.rest > 0 ? ' · descanso ' + clock(ses.rest) : ''}</span><span style=${sx('color:var(--color-accent)')}>Volver</span>
     </button>`}
     ${showNav && html`<div style=${sx('flex:none;height:66px;display:grid;grid-template-columns:repeat(4,1fr);background:var(--color-surface);border-top:1px solid color-mix(in srgb, var(--color-text) 6%, transparent)')}>
-      ${[['home','Inicio','ph-house'],['routines','Rutinas','ph-list-checks'],['library','Ejercicios','ph-barbell'],['progress','Progreso','ph-chart-line-up']].map(([k, label, ic]) => { const on = navActive === k;
+      ${NAV.map(([k, label, ic]) => { const on = navActive === k;
         return html`<button key=${k} onClick=${go(k)} style=${sx(`border:0;background:transparent;color:${on ? 'var(--color-accent-200)' : 'var(--color-neutral-400)'};display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;font-size:11px`)}>
           <span style=${sx(`width:56px;height:28px;border-radius:14px;display:grid;place-items:center;background:${on ? 'var(--color-accent-800)' : 'transparent'}`)}><i class=${(on ? 'ph-fill ' : 'ph ') + ic} style=${sx('font-size:20px')}></i></span>${label}
         </button>`; })}
