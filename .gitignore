@@ -1,0 +1,8 @@
+node_modules/
+sync.local.json
+config.js
+www/
+android/
+design/
+sync-backend/.clasp.json
+*.apk
