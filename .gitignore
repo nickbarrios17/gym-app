@@ -3,6 +3,24 @@ sync.local.json
 config.js
 www/
 android/
-design/
+# design/ puede contener material local; solo se versionan los prototipos importados y la referencia
+design/*
+!design/prototypes/
+!design/reference/
 sync-backend/.clasp.json
 *.apk
+
+# Secretos y configuración local (nunca se versionan)
+.env
+.env.*
+!.env.example
+supabase/.env
+supabase/functions/.env
+supabase/.branches/
+supabase/.temp/
+
+# Artefactos temporales
+coverage/
+*.log
+.DS_Store
+*.tsbuildinfo

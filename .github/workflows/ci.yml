@@ -1,0 +1,71 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Pruebas unitarias (Vitest)
+        run: npm test
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.122.0
+
+      - name: Levantar Supabase local
+        run: supabase start
+
+      - name: Reiniciar base de datos (migraciones + seed)
+        run: supabase db reset
+
+      - name: Lint de la base de datos
+        run: supabase db lint --level warning
+
+      - name: Pruebas de base de datos (pgTAP)
+        run: supabase test db
+
+      - name: Tipos generados al día
+        run: |
+          supabase gen types typescript --local > /tmp/db.types.ts
+          echo "Comparando con packages/domain/src/db.types.ts (solo aviso hasta reemplazar el generador de respaldo)"
+          diff -q /tmp/db.types.ts packages/domain/src/db.types.ts || echo "::warning::db.types.ts difiere del generador oficial; ejecuta npm run db:types"
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.5.4
+
+      - name: Pruebas de la Edge Function delete-account
+        run: |
+          deno check supabase/functions/delete-account/index.ts
+          deno test --allow-net --allow-env supabase/functions/delete-account/index.test.ts
+
+      - name: Pruebas de integración del api-client
+        run: |
+          eval "$(supabase status -o env | sed 's/^/export /')"
+          VIDA_IT=1 SUPABASE_URL="$API_URL" SUPABASE_ANON_KEY="$ANON_KEY" MAILPIT_URL="${INBUCKET_URL:-${MAILPIT_URL:-http://127.0.0.1:54324}}" \
+            npm run test:integration -w @vida/api-client
+
+      - name: Detener Supabase
+        if: always()
+        run: supabase stop --no-backup

@@ -1,0 +1,21 @@
+{
+  "name": "@vida/api-client",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Cliente tipado de VIDA sobre Supabase (auth, perfil, catálogo, rutinas, sesiones, exportación)",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run --exclude 'test/**/*.integration.test.ts'",
+    "test:integration": "vitest run test/integration"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.76.1",
+    "@vida/domain": "0.1.0"
+  }
+}

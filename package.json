@@ -2,12 +2,36 @@
   "name": "gym-app",
   "version": "1.0.0",
   "private": true,
-  "description": "App de gimnasio: rutinas, pesos, progreso, técnica 3D, notas y calorías",
+  "description": "VIDA (antes Gym App): app web actual + backend Supabase y paquetes compartidos",
   "dependencies": {
     "@phosphor-icons/web": "2.1.1",
     "htm": "3.1.1",
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "three": "0.149.0"
+  },
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build:app": "node build.js",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "test:integration": "npm run test:integration --workspaces --if-present",
+    "db:start": "supabase start",
+    "db:reset": "supabase db reset",
+    "db:test": "supabase test db",
+    "db:lint": "supabase db lint",
+    "db:types": "supabase gen types typescript --local > packages/domain/src/db.types.ts",
+    "db:test:local-pg": "scripts/local-pg/run.sh"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "@types/node": "^22.18.12",
+    "supabase": "^2.122.0",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
   }
 }
